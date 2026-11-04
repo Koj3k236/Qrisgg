@@ -204,6 +204,8 @@ async def reconcile_verify(invoice_id: str, *, event_id: str, actor_id: str, not
         "amount_expected": inv["payable_amount"], "amount_received": event["amount"], "actor_id": actor_id, "created_at": iso()})
     await db.payment_events.update_one({"id": event_id}, {"$set": {"status": "RECONCILED"}})
     await emit_event(inv["merchant_id"], "payment.verified", {"invoice_id": invoice_id, "amount": event["amount"], "event_id": event_id})
+    from modules.ledger import create_settlement_for_invoice
+    await create_settlement_for_invoice(inv)
     return public_invoice(inv)
 
 

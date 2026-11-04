@@ -1,3 +1,4 @@
+import asyncio
 import re
 import secrets
 from datetime import timedelta
@@ -11,7 +12,7 @@ from core.audit import audit, client_ip
 from core.config import APP_PUBLIC_URL, REFRESH_TTL_DAYS, ACCESS_TTL_MIN, PLATFORM_ROLES
 from core.db import db
 from core.deps import get_current_session, get_current_user
-from core.email import send_email, verification_email, reset_email
+from core.email import send_email, verification_email, reset_email, login_alert_email
 from core.security import (new_id, iso, now, hash_password, verify_password, sha256, encrypt, decrypt,
                            access_token, refresh_token, decode_token, create_token)
 
@@ -202,14 +203,23 @@ async def mfa_verify(body: MfaVerifyIn, request: Request, response: Response):
     sid = await _create_session(request, user["id"], mfa_verified=True)
     _set_cookies(response, user["id"], sid)
     await audit("auth.login_mfa", actor_id=user["id"], request=request)
+    if user.get("platform_role"):
+        subject, html = login_alert_email(user["name"], client_ip(request), iso()[:19])
+        asyncio.create_task(send_email(to=user["email"], subject=subject, html=html, template="admin_login_alert"))
     session = await db.sessions.find_one({"id": sid}, {"_id": 0})
     return await build_me(user, session)
 
 
+class RotateIn(BaseModel):
+    code: str | None = Field(None, min_length=6, max_length=6)
+
+
 @router.post("/2fa/setup")
-async def mfa_setup(user: dict = Depends(get_current_user)):
+async def mfa_setup(body: RotateIn | None = None, user: dict = Depends(get_current_user)):
     if user.get("mfa_enabled"):
-        raise HTTPException(409, "2FA sudah aktif")
+        full = await db.users.find_one({"id": user["id"]})
+        if not body or not body.code or not pyotp.TOTP(decrypt(full["mfa_secret_enc"])).verify(body.code, valid_window=1):
+            raise HTTPException(400, "Untuk mengganti authenticator, masukkan kode 2FA saat ini yang valid")
     secret = pyotp.random_base32()
     await db.users.update_one({"id": user["id"]}, {"$set": {"mfa_pending_enc": encrypt(secret)}})
     return {"secret": secret, "otpauth_uri": pyotp.TOTP(secret).provisioning_uri(user["email"], issuer_name="Qrisgg")}

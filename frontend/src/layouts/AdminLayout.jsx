@@ -14,9 +14,9 @@ const GROUPS = [
     { id: "admin-providers", label: "Provider", to: "/admin/payment-providers", icon: Plug },
   ] },
   { label: "Keuangan", items: [
-    { id: "admin-ledger", label: "Ledger", to: "/admin/ledger", icon: BookOpen, soon: true },
-    { id: "admin-settlements", label: "Settlement", to: "/admin/settlements", icon: Landmark, soon: true },
-    { id: "admin-withdrawals", label: "Penarikan", to: "/admin/withdrawals", icon: Wallet, soon: true },
+    { id: "admin-ledger", label: "Ledger", to: "/admin/ledger", icon: BookOpen },
+    { id: "admin-settlements", label: "Settlement", to: "/admin/settlements", icon: Landmark },
+    { id: "admin-withdrawals", label: "Penarikan", to: "/admin/withdrawals", icon: Wallet },
     { id: "admin-fees", label: "Biaya", to: "/admin/fees", icon: Coins, soon: true },
     { id: "admin-plans", label: "Paket Harga", to: "/admin/plans", icon: Tags },
   ] },

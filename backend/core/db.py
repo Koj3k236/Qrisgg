@@ -80,6 +80,16 @@ INDEXES = {
     "support_tickets": [I([("id", ASCENDING)], unique=True, name="id"), I([("merchant_id", ASCENDING)], name="merchant")],
     "system_settings": [I([("key", ASCENDING)], unique=True, name="key")],
     "email_logs": [I([("created_at", DESCENDING)], name="created")],
+    "ledger_journals": [I([("idempotency_key", ASCENDING)], unique=True, name="idem"), I([("lines.account", ASCENDING)], name="account"),
+                        I([("merchant_id", ASCENDING), ("created_at", DESCENDING)], name="merchant")],
+    "settlements": [I([("id", ASCENDING)], unique=True, name="id"), I([("invoice_id", ASCENDING)], unique=True, name="invoice"),
+                    I([("status", ASCENDING), ("hold_release_at", ASCENDING)], name="release")],
+    "bank_accounts": [I([("id", ASCENDING)], unique=True, name="id"), I([("merchant_id", ASCENDING)], name="merchant")],
+    "withdrawal_requests": [I([("id", ASCENDING)], unique=True, name="id"),
+                            I([("merchant_id", ASCENDING), ("idempotency_key", ASCENDING)], unique=True, name="idem"),
+                            I([("status", ASCENDING)], name="status")],
+    "payout_attempts": [I([("withdrawal_id", ASCENDING)], name="withdrawal")],
+    "ledger_locks": [I([("merchant_id", ASCENDING)], unique=True, name="merchant")],
 }
 
 

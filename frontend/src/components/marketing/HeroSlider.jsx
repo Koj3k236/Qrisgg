@@ -26,9 +26,6 @@ export const HeroSlider = ({ interval = 5000 }) => {
           initial={{ opacity: 0, scale: 1.04 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0 }}
           transition={{ duration: 0.9, ease: "easeOut" }} className="absolute inset-0 h-full w-full object-cover" />
       </AnimatePresence>
-      <span data-testid="hero-demo-label" className="absolute right-3 top-3 z-10 rounded-md bg-red-600 px-2 py-1 text-[10px] font-bold uppercase tracking-widest text-white shadow">
-        Ilustrasi · QR DEMO
-      </span>
       {[-1, 1].map((d) => (
         <button key={d} type="button" onClick={() => go(d)} aria-label={d < 0 ? "Slide sebelumnya" : "Slide berikutnya"}
           data-testid={`hero-slider-${d < 0 ? "prev" : "next"}-btn`}

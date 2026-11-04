@@ -135,7 +135,7 @@ function SecurityPanel() {
         <div className="space-y-4 p-5 text-sm">
           <div className="flex items-center justify-between"><span>Email terverifikasi</span><StatusBadge status={user.email_verified ? "ACTIVE" : "PENDING_REVIEW"} testid="settings-email-verified" /></div>
           <div className="flex items-center justify-between"><span>Autentikasi dua langkah</span>
-            {user.mfa_enabled ? <button type="button" onClick={disable2fa} data-testid="disable-2fa-btn" className={btnGhost}>Nonaktifkan</button> : <a href="/2fa" data-testid="enable-2fa-link" className={btnGhost}>Aktifkan 2FA</a>}
+            {user.mfa_enabled ? <div className="flex gap-2"><a href="/2fa?rotate=1" data-testid="rotate-2fa-link" className={btnGhost}>Ganti authenticator</a>{!user.platform_role && <button type="button" onClick={disable2fa} data-testid="disable-2fa-btn" className={btnGhost}>Nonaktifkan</button>}</div> : <a href="/2fa" data-testid="enable-2fa-link" className={btnGhost}>Aktifkan 2FA</a>}
           </div>
           <form onSubmit={change} className="space-y-2 border-t border-slate-100 pt-4 dark:border-slate-800">
             <input data-testid="current-password-input" type="password" required placeholder="Kata sandi saat ini" value={pw.current_password} onChange={(e) => setPw({ ...pw, current_password: e.target.value })} className={inputCls} />

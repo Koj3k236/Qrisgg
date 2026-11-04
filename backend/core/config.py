@@ -40,4 +40,6 @@ DEFAULT_SETTINGS = {
     "min_amount": 1000,
     "max_amount": 100_000_000,
     "hold_hours": 6,
+    "withdrawal_min": 10_000,
+    "withdrawal_max": 50_000_000,
 }

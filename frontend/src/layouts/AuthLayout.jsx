@@ -15,7 +15,6 @@ export default function AuthLayout() {
       <div className="noise relative hidden overflow-hidden bg-[#0B1736] lg:block">
         <img src="/images/kafe.jpg" alt="Pelanggan membayar dengan QRIS" className="absolute inset-0 h-full w-full object-cover object-[78%_center] opacity-60" />
         <div className="absolute inset-0 bg-gradient-to-t from-[#0B1736] via-[#0B1736]/40 to-transparent" />
-        <span className="absolute right-6 top-6 rounded-md bg-red-600 px-2 py-1 text-[10px] font-bold uppercase tracking-widest text-white">Ilustrasi · QR DEMO</span>
         <div className="absolute bottom-12 left-12 right-12 text-white">
           <p className="text-3xl font-bold leading-tight tracking-tight">Satu QRIS, Lebih Banyak Peluang.</p>
           <p className="mt-3 max-w-md text-slate-300">Kelola invoice, pantau pembayaran, dan integrasikan sistem Anda dengan aman.</p>

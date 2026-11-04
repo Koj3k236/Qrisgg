@@ -12,7 +12,8 @@ from starlette.middleware.cors import CORSMiddleware
 
 from core.db import db, client, ensure_indexes, detect_transactions
 from core.security import hash_password, encrypt, new_id, iso
-from modules import auth, merchant, invoices, developers, admin, public
+from modules import auth, merchant, invoices, developers, admin, public, finance
+from modules.ledger import release_due_holds, process_payouts, run_auto_withdrawals
 from modules.payments import expire_due_invoices, release_allocations
 from modules.webhooks import process_due_deliveries
 
@@ -23,7 +24,8 @@ app = FastAPI(title="Qrisgg API", version="0.1.0-sandbox", docs_url="/api/docs",
               description="Qrisgg QRIS payment management API. Mode: SANDBOX. Provider fase 1: Bank Mandiri — Livin' Usaha "
                           "(sandbox; adapter resmi nonaktif). Endpoint developer: /api/v1/* dengan header Authorization: Bearer qgg_sk_...")
 
-for r in (public.router, auth.router, merchant.router, invoices.router, developers.router, developers.v1, admin.router):
+for r in (public.router, auth.router, merchant.router, invoices.router, developers.router, finance.merchant, finance.admin,
+          finance.v1, developers.v1, admin.router):
     app.include_router(r)
 
 UNSAFE = {"POST", "PUT", "PATCH", "DELETE"}
@@ -103,6 +105,9 @@ async def worker_loop() -> None:
             await expire_due_invoices()
             await release_allocations()
             await process_due_deliveries()
+            await release_due_holds()
+            await run_auto_withdrawals()
+            await process_payouts()
         except Exception:
             logger.exception("worker loop error")
         await asyncio.sleep(10)

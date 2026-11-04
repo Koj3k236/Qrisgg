@@ -50,6 +50,7 @@ export const Hero = () => (
             </li>
           ))}
         </motion.ul>
+        <p data-testid="hero-photo-note" className="mt-6 text-xs text-slate-400">Foto promosi. Kode QR pada foto bukan QRIS pembayaran aktif.</p>
       </div>
       <motion.div {...fade(0.2)} className="relative lg:col-span-7">
         <HeroSlider />

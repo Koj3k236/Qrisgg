@@ -15,6 +15,8 @@ import Home from "@/pages/marketing/Home";
 import * as M from "@/pages/marketing/Pages";
 import { SettingsPage, SupportPage, TeamPage } from "@/pages/merchant/Account";
 import { ApiKeysPage, DevelopersHome, WebhooksPage } from "@/pages/merchant/Developers";
+import { BalancePage, SettlementsPage, WithdrawalsPage } from "@/pages/merchant/Finance";
+import { AdminLedger, AdminSettlements, AdminWithdrawals } from "@/pages/admin/AdminFinance";
 import InvoiceDetail from "@/pages/merchant/InvoiceDetail";
 import Invoices from "@/pages/merchant/Invoices";
 import Overview from "@/pages/merchant/Overview";
@@ -22,7 +24,6 @@ import { PaymentsPage, QrisPage } from "@/pages/merchant/PaymentsQris";
 import PayPage from "@/pages/Pay";
 
 const NI = (title, phase, note) => <NotImplemented title={title} phase={phase} note={note} />;
-const LEDGER_NOTE = "Untuk model QRIS langsung ke merchant, Qrisgg tidak menampung dana sehingga tidak ada saldo yang ditampilkan.";
 
 function App() {
   useThemeMode();
@@ -60,9 +61,9 @@ function App() {
             <Route path="transactions" element={<PaymentsPage title="Transaksi" />} />
             <Route path="qris" element={<QrisPage />} />
             <Route path="payment-links" element={NI("Payment Links", "Fase 9")} />
-            <Route path="balance" element={NI("Saldo", "Fase 8", LEDGER_NOTE)} />
-            <Route path="settlements" element={NI("Settlement", "Fase 8", LEDGER_NOTE)} />
-            <Route path="withdrawals" element={NI("Penarikan", "Fase 8", "Semua payout akan berupa simulasi sampai ada integrasi payout resmi.")} />
+            <Route path="balance" element={<BalancePage />} />
+            <Route path="settlements" element={<SettlementsPage />} />
+            <Route path="withdrawals" element={<WithdrawalsPage />} />
             <Route path="developers" element={<DevelopersHome />} />
             <Route path="api-keys" element={<ApiKeysPage />} />
             <Route path="webhooks" element={<WebhooksPage />} />
@@ -85,11 +86,11 @@ function App() {
             <Route path="audit-logs" element={<A.AdminAudit />} />
             <Route path="settings" element={<A.AdminSettings />} />
             <Route path="support" element={<A.AdminSupport />} />
-            <Route path="ledger" element={NI("Ledger", "Fase 8", "Ledger double-entry belum dibangun.")} />
-            <Route path="settlements" element={NI("Settlement", "Fase 8")} />
-            <Route path="withdrawals" element={NI("Penarikan", "Fase 8")} />
-            <Route path="fees" element={NI("Biaya", "Fase 8", "Tidak ada biaya resmi Mandiri yang dicantumkan.")} />
-            <Route path="risk" element={NI("Risiko", "Fase 11")} />
+            <Route path="ledger" element={<AdminLedger />} />
+            <Route path="settlements" element={<AdminSettlements />} />
+            <Route path="withdrawals" element={<AdminWithdrawals />} />
+            <Route path="fees" element={NI("Biaya", "setelah ada ketentuan komersial resmi", "Diblokir eksternal: belum ada MDR/biaya resmi dari Bank Mandiri untuk dicantumkan.")} />
+            <Route path="risk" element={NI("Risiko", "Fase 13 lanjutan")} />
           </Route>
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>

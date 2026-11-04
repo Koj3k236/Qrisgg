@@ -12,9 +12,9 @@ const GROUPS = [
     { id: "qris", label: "QRIS Mandiri", to: "/dashboard/qris", icon: QrCode },
   ] },
   { label: "Keuangan", items: [
-    { id: "balance", label: "Saldo", to: "/dashboard/balance", icon: Wallet, soon: true },
-    { id: "settlements", label: "Settlement", to: "/dashboard/settlements", icon: Landmark, soon: true },
-    { id: "withdrawals", label: "Penarikan", to: "/dashboard/withdrawals", icon: Banknote, soon: true },
+    { id: "balance", label: "Saldo", to: "/dashboard/balance", icon: Wallet },
+    { id: "settlements", label: "Settlement", to: "/dashboard/settlements", icon: Landmark },
+    { id: "withdrawals", label: "Penarikan", to: "/dashboard/withdrawals", icon: Banknote },
   ] },
   { label: "Developer", items: [
     { id: "developers", label: "Ikhtisar API", to: "/dashboard/developers", icon: Code2 },

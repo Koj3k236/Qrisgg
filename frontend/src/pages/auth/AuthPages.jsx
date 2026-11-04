@@ -178,13 +178,17 @@ const CodeInput = ({ value, onChange }) => (
     className="w-full rounded-xl border border-slate-300 bg-white px-4 py-4 text-center font-mono text-2xl tracking-[0.5em] outline-none focus:border-[#2563EB] dark:border-slate-700 dark:bg-[#122045]" />
 );
 
-function MfaSetup() {
+function MfaSetup({ rotate = false }) {
   const { refresh } = useAuth();
   const nav = useNavigate();
   const [setup, setSetup] = useState(null);
   const [code, setCode] = useState("");
   const { busy, error, run } = useSubmit();
-  const start = () => run(async () => setSetup((await api.post("/auth/2fa/setup")).data));
+  const start = () => run(async () => {
+    const code = rotate ? window.prompt("Kode 2FA saat ini (authenticator lama)") : null;
+    if (rotate && !code) return;
+    setSetup((await api.post("/auth/2fa/setup", rotate ? { code } : {})).data);
+  });
   const enable = (e) => {
     e.preventDefault();
     run(async () => {
@@ -196,7 +200,7 @@ function MfaSetup() {
   };
   return (
     <div data-testid="mfa-setup">
-      <Head title="Aktifkan 2FA" desc="Wajib untuk administrator. Gunakan aplikasi authenticator (TOTP)." />
+      <Head title={rotate ? "Ganti authenticator" : "Aktifkan 2FA"} desc="Wajib untuk administrator. Gunakan aplikasi authenticator (TOTP) milik Anda sendiri." />
       {!setup ? <button type="button" onClick={start} data-testid="mfa-start-btn" className="w-full rounded-full bg-[#2563EB] py-3.5 text-sm font-semibold text-white">Mulai Pengaturan</button> : (
         <form onSubmit={enable} className="space-y-5">
           <div className="flex justify-center rounded-2xl border border-slate-200 bg-white p-5"><QRCodeSVG value={setup.otpauth_uri} size={180} /></div>
@@ -221,6 +225,7 @@ export function TwoFactorPage() {
     if (user === null) return null;
     if (!user) return <Navigate to="/login" replace />;
     if (!user.mfa_enabled) return <MfaSetup />;
+    if (new URLSearchParams(loc.search).get("rotate") === "1") return <MfaSetup rotate />;
     return <Navigate to={homeFor(user)} replace />;
   }
   const submit = (e) => {

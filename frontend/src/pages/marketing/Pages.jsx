@@ -42,8 +42,7 @@ export function AboutPage() {
             <p>Arsitektur modular dengan state machine pembayaran yang eksplisit, alokasi nominal unik yang aman terhadap konkurensi, audit log menyeluruh, dan mode sandbox sebelum transaksi nyata.</p>
           </Reveal>
           <Reveal className="relative overflow-hidden rounded-3xl">
-            <img src="/images/modern.jpg" alt="Pelanggan membayar QRIS di kafe" className="h-full w-full object-cover" />
-            <span className="absolute left-3 top-3 rounded-md bg-red-600 px-2 py-1 text-[10px] font-bold uppercase tracking-widest text-white">Ilustrasi · QR DEMO</span>
+            <img src="/images/modern.jpg" alt="Pelanggan membayar QRIS di kafe" loading="lazy" className="h-full w-full object-cover" />
           </Reveal>
         </div>
       </section>

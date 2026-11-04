@@ -31,6 +31,14 @@ export const STATUS_META = {
   IN_PROGRESS: { label: "Diproses", tone: "amber" },
   RESOLVED: { label: "Selesai", tone: "green" },
   CLOSED: { label: "Ditutup", tone: "slate" },
+  PENDING_CONFIRMATION: { label: "Menunggu Konfirmasi", tone: "amber" },
+  CONFIRMED: { label: "Dikonfirmasi · Hold", tone: "blue" },
+  RELEASED: { label: "Dirilis", tone: "green" },
+  APPROVED: { label: "Disetujui", tone: "sky" },
+  PROCESSING: { label: "Diproses", tone: "sky" },
+  RETRY_PENDING: { label: "Menunggu Retry", tone: "orange" },
+  COMPLETED: { label: "Selesai", tone: "green" },
+  REQUESTED: { label: "Diajukan", tone: "amber" },
 };
 
 export const ROLE_LABEL = {

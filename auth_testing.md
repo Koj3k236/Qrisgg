@@ -1,13 +1,9 @@
 # Auth Testing Playbook (Qrisgg)
 
-1. MongoDB: `db.users.findOne({platform_role:"SUPER_ADMIN"})` — password_hash starts with `$argon2id$`. Indexes: users.email unique, login_attempts.identifier unique, auth_tokens.expires_at TTL, sessions.expires_at TTL.
-2. API:
-```
-API=$(grep REACT_APP_BACKEND_URL /app/frontend/.env | cut -d= -f2)
-curl -c c.txt -X POST $API/api/auth/login -H "Content-Type: application/json" -d '{"email":"jenniferwidra@hotmail.com","password":"Qrisgg#Admin2026"}'   # -> mfa_required + mfa_token
-CODE=$(python3 -c "import pyotp;print(pyotp.TOTP('ZLCVUO7WSTA7METK5GDAEVQKR5BVFAPY').now())")
-curl -c c.txt -X POST $API/api/auth/2fa/verify -H "Content-Type: application/json" -d "{\"mfa_token\":\"<token>\",\"code\":\"$CODE\"}"
-curl -b c.txt $API/api/auth/me
-```
+Credentials: read /app/memory/test_credentials.md (gitignored; never commit credentials).
+
+1. MongoDB: SUPER_ADMIN password_hash starts with `$argon2id$`. Indexes: users.email unique, login_attempts.identifier unique, auth_tokens.expires_at TTL, sessions.expires_at TTL.
+2. API: POST /api/auth/login -> {mfa_required, mfa_token} for admin; POST /api/auth/2fa/verify {mfa_token, code} (code from pyotp with the secret in test_credentials.md); GET /api/auth/me.
 3. Cookies: access_token + refresh_token are HttpOnly, Secure, SameSite=None.
 4. Mutating requests with cookies from a foreign Origin header are rejected (403 CSRF).
+5. Lockout: 5 fails per IP+email, 10 fails per account -> 429 for 15 minutes.

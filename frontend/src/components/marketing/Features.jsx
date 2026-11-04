@@ -9,8 +9,8 @@ export const FEATURES = [
   { icon: BarChart3, title: "Transaction Monitoring", desc: "Pantau setiap sinyal pembayaran, hasil pencocokan, dan antrian review.", status: "Sandbox" },
   { icon: Code2, title: "Developer API & Webhooks", desc: "REST API berversi, API key ber-scope, Idempotency-Key, dan webhook bertanda tangan HMAC-SHA256.", span: "lg:col-span-2", status: "Sandbox", to: "/developers" },
   { icon: LayoutDashboard, title: "Merchant Dashboard", desc: "Statistik invoice, pembayaran terverifikasi, tim, dan pengaturan dalam satu panel.", status: "Sandbox" },
-  { icon: Landmark, title: "Settlement Monitoring", desc: "Pelacakan settlement dari sumber terpercaya setelah integrasi resmi tersedia.", status: "Segera Hadir" },
-  { icon: Wallet, title: "Withdrawal Management", desc: "Alur penarikan dengan persetujuan dan audit — hanya simulasi sampai ada otorisasi payout.", status: "Segera Hadir" },
+  { icon: Landmark, title: "Settlement Monitoring", desc: "Konfirmasi settlement, hold 6 jam yang dapat dikonfigurasi, dan laporan — saat ini dalam mode sandbox.", status: "Sandbox" },
+  { icon: Wallet, title: "Withdrawal Management", desc: "Rekening tujuan terverifikasi, persetujuan admin, jadwal otomatis, dan retry — payout melalui simulator.", status: "Sandbox" },
 ];
 
 export const Features = () => (

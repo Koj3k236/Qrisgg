@@ -1,3 +1,4 @@
+import asyncio
 import ipaddress
 import logging
 import os
@@ -14,9 +15,12 @@ from core.security import iso, new_id
 logger = logging.getLogger("qrisgg.email")
 
 EMAIL_BASE_URL = "https://integrations.emergentagent.com"
-EMAIL_KEY = os.environ["EMERGENT_EMAIL_KEY"]
+EMAIL_PROVIDER = os.environ.get("EMAIL_PROVIDER", "emergent")  # emergent | resend | smtp
+EMAIL_KEY = os.environ.get("EMERGENT_EMAIL_KEY")
 EMAIL_FROM_NAME = os.environ["EMAIL_FROM_NAME"]
+EMAIL_FROM_ADDRESS = os.environ.get("EMAIL_FROM_ADDRESS")
 EMAIL_REPLY_TO = os.environ.get("EMAIL_REPLY_TO")
+RETRYABLE = {429, 500, 502, 503, 504}
 
 _SHORTENERS = ("bit.ly", "tinyurl.com", "t.co", "is.gd", "cutt.ly", "goo.gl", "rebrand.ly")
 _CRED_ASK = ("reply with your password", "reply with the code", "send your password", "cvv",
@@ -91,31 +95,75 @@ def _assert_safe_email(subject: str, html: str) -> None:
                 raise ValueError(f"Anchor text {m.group(1)!r} != real link host {real!r} (G3)")
 
 
-async def send_email(*, to: str, subject: str, html: str, template: str) -> dict:
-    """Sends via Emergent managed Resend. Never raises; returns delivery status and logs it."""
-    _assert_safe_email(subject, html)
-    payload = {"to": [to], "subject": subject, "html": html, "from_name": EMAIL_FROM_NAME}
-    if EMAIL_REPLY_TO:
-        payload["contact_email"] = EMAIL_REPLY_TO
-    result = {"status": "SENT", "provider_id": None, "error": None}
-    try:
-        async with httpx.AsyncClient(timeout=30) as client:
+async def _send_once(to: str, subject: str, html: str) -> str | None:
+    async with httpx.AsyncClient(timeout=30) as client:
+        if EMAIL_PROVIDER == "resend":
+            payload = {"from": f"{EMAIL_FROM_NAME} <{EMAIL_FROM_ADDRESS}>", "to": [to], "subject": subject, "html": html}
+            if EMAIL_REPLY_TO:
+                payload["reply_to"] = EMAIL_REPLY_TO
+            resp = await client.post("https://api.resend.com/emails", json=payload,
+                                     headers={"Authorization": f"Bearer {os.environ['RESEND_API_KEY']}"})
+        else:
+            payload = {"to": [to], "subject": subject, "html": html, "from_name": EMAIL_FROM_NAME}
+            if EMAIL_REPLY_TO:
+                payload["contact_email"] = EMAIL_REPLY_TO
             resp = await client.post(f"{EMAIL_BASE_URL}/api/v1/email/send", headers={"X-Email-Key": EMAIL_KEY}, json=payload)
-        resp.raise_for_status()
-        result["provider_id"] = resp.json().get("id")
-    except httpx.HTTPStatusError as e:
+    resp.raise_for_status()
+    return resp.json().get("id")
+
+
+def _smtp_send(to: str, subject: str, html: str) -> None:
+    import smtplib
+    from email.message import EmailMessage
+    msg = EmailMessage()
+    msg["From"], msg["To"], msg["Subject"] = f"{EMAIL_FROM_NAME} <{EMAIL_FROM_ADDRESS}>", to, subject
+    if EMAIL_REPLY_TO:
+        msg["Reply-To"] = EMAIL_REPLY_TO
+    msg.set_content("Buka email ini dengan klien yang mendukung HTML.")
+    msg.add_alternative(html, subtype="html")
+    with smtplib.SMTP(os.environ["SMTP_HOST"], int(os.environ.get("SMTP_PORT", "587")), timeout=30) as s:
+        s.starttls()
+        s.login(os.environ["SMTP_USER"], os.environ["SMTP_PASSWORD"])
+        s.send_message(msg)
+
+
+async def send_email(*, to: str, subject: str, html: str, template: str) -> dict:
+    """Provider adapter (emergent/resend/smtp) with up to 3 attempts on transient errors. Never raises; logs status.
+    SENT means the provider accepted the message, not that it was received."""
+    _assert_safe_email(subject, html)
+    result = {"status": "SENT", "provider": EMAIL_PROVIDER, "provider_id": None, "error": None, "attempts": 0}
+    for attempt in range(1, 4):
+        result["attempts"] = attempt
         try:
-            code = e.response.json().get("code", "")
-        except ValueError:
-            code = ""
-        result = {"status": "PAUSED" if code in ("insufficient_credits", "integration_disabled", "daily_limit_reached") else "FAILED",
-                  "provider_id": None, "error": f"{e.response.status_code} {code}".strip()}
+            if EMAIL_PROVIDER == "smtp":
+                await asyncio.to_thread(_smtp_send, to, subject, html)
+            else:
+                result["provider_id"] = await _send_once(to, subject, html)
+            result.update(status="SENT", error=None)
+            break
+        except httpx.HTTPStatusError as e:
+            try:
+                code = e.response.json().get("code", "")
+            except ValueError:
+                code = ""
+            paused = code in ("insufficient_credits", "integration_disabled", "daily_limit_reached")
+            result.update(status="PAUSED" if paused else "FAILED", error=f"{e.response.status_code} {code}".strip())
+            if paused or e.response.status_code not in RETRYABLE:
+                break
+        except Exception as e:
+            result.update(status="FAILED", error=str(e)[:200])
+        await asyncio.sleep(2 * attempt)
+    if result["status"] != "SENT":
         logger.warning("Email send failed (%s): %s", template, result["error"])
-    except Exception as e:
-        result = {"status": "FAILED", "provider_id": None, "error": str(e)[:200]}
-        logger.error("Email send error (%s): %s", template, e)
     await db.email_logs.insert_one({"id": new_id("eml"), "to": to, "template": template, **result, "created_at": iso()})
     return result
+
+
+def login_alert_email(name: str, ip: str | None, when: str) -> tuple[str, str]:
+    body = (f'<p style="font-size:14px;line-height:1.6">Halo {escape(name)}, ada login baru ke akun Anda dari IP '
+            f'<strong>{escape(ip or "-")}</strong> pada {escape(when)} (UTC).</p>'
+            f'<p style="font-size:14px">Jika ini bukan Anda, segera atur ulang kata sandi dan cabut sesi di halaman Pengaturan.</p>')
+    return f"Login baru ke akun {EMAIL_FROM_NAME}", _layout("Peringatan keamanan login", body)
 
 
 def _layout(title: str, body_html: str) -> str:
