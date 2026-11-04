@@ -16,7 +16,7 @@ from core.security import (new_id, iso, now, hash_password, verify_password, sha
                            access_token, refresh_token, decode_token, create_token)
 
 router = APIRouter(prefix="/api/auth", tags=["auth"])
-MAX_FAILS, LOCK_MIN = 5, 15
+MAX_FAILS, MAX_ACCOUNT_FAILS, LOCK_MIN = 5, 10, 15
 
 
 def _strong(pw: str) -> str:
@@ -159,22 +159,23 @@ async def register(body: RegisterIn, request: Request, response: Response):
 @router.post("/login")
 async def login(body: LoginIn, request: Request, response: Response):
     email = body.email.lower()
-    ident = f"{client_ip(request)}:{email}"
-    att = await db.login_attempts.find_one({"identifier": ident})
-    if att and att.get("locked_until") and att["locked_until"] > iso():
+    idents = {f"{client_ip(request)}:{email}": MAX_FAILS, f"acct:{email}": MAX_ACCOUNT_FAILS}
+    atts = {a["identifier"]: a async for a in db.login_attempts.find({"identifier": {"$in": list(idents)}})}
+    if any(a.get("locked_until") and a["locked_until"] > iso() for a in atts.values()):
         raise HTTPException(429, "Terlalu banyak percobaan gagal. Coba lagi dalam 15 menit.")
     user = await db.users.find_one({"email": email}, {"_id": 0})
     if not user or not verify_password(body.password, user["password_hash"]):
-        fails = (att or {}).get("count", 0) + 1
-        upd = {"count": fails, "updated_at": iso()}
-        if fails >= MAX_FAILS:
-            upd = {"count": 0, "locked_until": iso(now() + timedelta(minutes=LOCK_MIN)), "updated_at": iso()}
-        await db.login_attempts.update_one({"identifier": ident}, {"$set": upd}, upsert=True)
+        for ident, limit in idents.items():
+            fails = atts.get(ident, {}).get("count", 0) + 1
+            upd = {"count": fails, "locked_until": None, "updated_at": iso()}
+            if fails >= limit:
+                upd = {"count": 0, "locked_until": iso(now() + timedelta(minutes=LOCK_MIN)), "updated_at": iso()}
+            await db.login_attempts.update_one({"identifier": ident}, {"$set": upd}, upsert=True)
         await audit("auth.login_failed", actor_id=user["id"] if user else None, metadata={"email": email}, request=request)
         raise HTTPException(401, "Email atau kata sandi salah")
     if user.get("status") == "DISABLED":
         raise HTTPException(403, "Akun dinonaktifkan")
-    await db.login_attempts.delete_one({"identifier": ident})
+    await db.login_attempts.delete_many({"identifier": {"$in": list(idents)}})
     if user.get("mfa_enabled"):
         return {"mfa_required": True, "mfa_token": create_token(user["id"], "mfa", timedelta(minutes=5))}
     sid = await _create_session(request, user["id"], mfa_verified=False)

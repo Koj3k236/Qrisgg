@@ -101,7 +101,7 @@ export default function InvoiceDetail() {
           <ModeBadge mode={inv.mode} /><StatusBadge status={inv.status} testid="invoice-status-badge" />
           <button type="button" onClick={() => { navigator.clipboard.writeText(payUrl); toast.success("Tautan disalin"); }} data-testid="copy-pay-link-btn" className={btnGhost}><Copy className="h-4 w-4" />Salin tautan</button>
           <a href={payUrl} target="_blank" rel="noreferrer" data-testid="open-pay-page-btn" className={btnGhost}><ExternalLink className="h-4 w-4" />Halaman bayar</a>
-          {can("invoices:write") && ["PENDING", "REVIEW_REQUIRED"].includes(inv.status) && <button type="button" onClick={cancel} data-testid="cancel-invoice-btn" className={btnDanger}>Batalkan</button>}
+          {can("invoices:write") && inv.status === "PENDING" && <button type="button" onClick={cancel} data-testid="cancel-invoice-btn" className={btnDanger}>Batalkan</button>}
         </>} />
       <div className="grid gap-6 xl:grid-cols-3">
         <div className="space-y-6 xl:col-span-2">

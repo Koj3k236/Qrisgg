@@ -1,0 +1,48 @@
+{
+  "summary": "Iteration 1: full backend (30 pytest cases) and frontend (Playwright) testing of Qrisgg. I found a CRITICAL integration bug and fixed it: the CSRF middleware rejected every cookie-authenticated POST/PUT/PATCH/DELETE from the real frontend with 403 'Origin tidak diizinkan (CSRF)', because CORS_ORIGINS in backend/.env still lists an old preview host (32bfed13-...) and not the current one (satu-qris--8qnrw0iz). So invoice creation, logout, simulate, admin verify and similar actions were broken in the UI. Registration and login were not affected because they send no cookie yet. After the fix, everything requested works end to end: landing page and hero slider auto-rotation (4 slides, dots, prev/next), all 10 marketing pages, contact toast, theme toggle, mobile menu, register -> dashboard with the PENDING_REVIEW banner, invoice create/detail/timeline, the public pay page (merchant name, payable amount, DEMO QR, countdown), the simulator (exact amount -> AWAITING_VERIFICATION, then DUPLICATE_PAYMENT; UNDERPAYMENT; OVERPAYMENT), cancel, admin login with TOTP 2FA -> reconciliation verify (wrong TOTP 401, success PAID_VERIFIED, record listed), every admin page, NOT IMPLEMENTED pages, QRIS validations, API keys (create/scope 403/rotate/revoke 401, /v1/balances 501), webhooks (http and private IP rejected, test delivery DELIVERED via httpbin), 30 concurrent invoices all with unique amounts, idempotency, tenant isolation, viewer RBAC, suspend -> 403, plans CRUD shown on public pricing, and invoice expiry by the worker. One remaining backend defect: the brute-force lockout can be bypassed when the client IP changes.",
+  "backend_issues": {
+    "critical": [
+      {"endpoint": "ALL unsafe cookie-auth routes (server.py request_context CSRF middleware)", "issue": "403 CSRF_REJECTED for same-origin requests from the deployed frontend. CORS_ORIGINS/APP_PUBLIC_URL in backend/.env point to an old preview host (32bfed13-13e2-47e4-8422-7d645102b815.preview.emergentagent.com), not the current REACT_APP_BACKEND_URL host. FIXED by testing agent: the middleware now also accepts Origin == Host/X-Forwarded-Host (same-origin). Cross-origin (https://evil.com) is still rejected with 403 (verified).", "priority": "CRITICAL (fixed)"},
+      {"endpoint": "POST /api/auth/login (brute-force lockout)", "issue": "The lockout identifier is f'{client_ip}:{email}', taken from the first X-Forwarded-For entry. When requests come from rotating egress IPs, failures are split across identifiers, so 6+ wrong passwords never return 429 (reproduced 3 times out of 3: identifiers 35.193.209.116 locked, 35.225.230.28 count=1 -> 401 instead of 429). An attacker rotating IPs can brute-force any account. Fix: also keep a per-account (email-only) counter and lock, and check both before verifying the password.", "priority": "HIGH"}
+    ],
+    "minor": [
+      {"endpoint": "POST /api/admin/invoices/{id}/verify on a PENDING invoice", "issue": "Returns 422 'Event pembayaran tidak terkait' instead of 409, because the event lookup runs before the state check. Double verify correctly returns 409."},
+      {"endpoint": "backend/.env APP_PUBLIC_URL", "issue": "Stale host, so verification and reset email links point to the old preview URL. The main agent should update APP_PUBLIC_URL and CORS_ORIGINS to the current host."},
+      {"endpoint": "Email (Emergent Resend)", "issue": "429 rate_limited after about 10 quick registrations. Registration still succeeds and the UI shows 'Email verifikasi belum terkirim'. Expected under test load."},
+      {"endpoint": "Password hashing", "issue": "Uses argon2 ($argon2...) rather than the bcrypt $2b$ the playbook expects. Acceptable, possibly stronger; listed as a deviation only."}
+    ]
+  },
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [
+      {"flow": "Every mutating action after login (create invoice, simulate, cancel, logout, API keys, webhooks, admin verify)", "issue": "Failed with toast 'Origin tidak diizinkan (CSRF)' before the backend fix above. Works after the fix.", "affected_selectors": ["invoice-submit-btn", "logout-btn", "simulate-payment-btn", "reconcile-verify-btn"]}
+    ],
+    "design_issues": [
+      {"screen": "Landing hero", "issues": ["Slider images are posters with their own large baked-in headline and CTA text, which competes with the page H1. The floating 'INVOICE Rp100.237' card covers the bottom of each poster (thumbnail strip and CTA).", "Large empty area below the hero until Reveal animations trigger on scroll."]},
+      {"screen": "/pricing, /developers", "issues": ["No <h1> element on the page (SEO/accessibility)."]},
+      {"screen": "Merchant invoice detail", "issues": ["'Batalkan' (cancel) is offered to the merchant on REVIEW_REQUIRED invoices, where a payment signal was already received. Business-logic question: should a merchant be able to cancel an invoice with a received payment?"]}
+    ]
+  },
+  "test_report_links": ["/app/backend/tests/test_qrisgg_api.py", "/app/backend/tests/conftest.py", "/app/test_reports/pytest/pytest_results.xml"],
+  "action_items": [
+    "Update backend/.env CORS_ORIGINS and APP_PUBLIC_URL to the current preview host (or derive them from config). Keep or review the same-origin CSRF fix applied in server.py.",
+    "Make the login lockout per-account (email) and not only ip:email, so rotating IPs cannot bypass it.",
+    "Optional: in reconcile_verify, check the invoice state before the event lookup, so verifying a PENDING invoice returns 409.",
+    "Optional: decide whether merchants may cancel REVIEW_REQUIRED invoices, and add an h1 to /pricing and /developers."
+  ],
+  "critical_code_review_comments": [
+    "server.py CSRF check compared Origin only against the static CORS_ORIGINS env value, so the whole app broke whenever the host changed. It now also allows same-origin.",
+    "Lockout keyed on X-Forwarded-For first entry, which is client-spoofable and not stable behind NAT or ingress.",
+    "Webhook SSRF protection (assert_public_https_url) runs only when the endpoint is created; there is no re-resolve check at delivery time, so DNS rebinding is possible. Disabling redirects in the httpx client is also recommended.",
+    "TOTP verify has no replay protection: the same code can be reused within the 30s window, for login and for step-up.",
+    "With duplicate payments, admin verify reconciles only the selected event; the other event stays MATCHED/REVIEW_REQUIRED with no follow-up flow (refund/flag).",
+    "_extract_token prefers the cookie over the Authorization header. That is fine, but a stale cookie overrides a valid Bearer token."
+  ],
+  "updated_files": ["/app/backend/server.py (same-origin allowance in CSRF middleware)", "/app/backend/tests/conftest.py", "/app/backend/tests/test_qrisgg_api.py"],
+  "success_rate": {"backend": "97% (29/30; only the lockout test fails because of the IP-rotation bug)", "frontend": "100% of tested flows after the CSRF fix (0% of mutating flows before the fix)"},
+  "seed_data_creation": "Created TEST_ users/merchants with delivered+<tag>@resend.dev emails (UI user: delivered+ui496648@resend.dev / TestPass12345), TEST_ invoices, API keys, webhooks (httpbin.org), QRIS submissions, a contact message and a support entry. Admin settings were saved without changes. A TEST_Plan was created and then deleted. No seeded data was modified, apart from SUPER_ADMIN verifying a TEST_ invoice and approving/suspending/re-approving TEST_ merchants.",
+  "retest_needed": true,
+  "should_main_agent_self_test": true,
+  "context_for_next_testing_agent": "Run: cd /app/backend && python -m pytest tests/ -q. conftest.py has admin TOTP login and register() helpers. test_login_wrong_then_lockout is expected to fail until the per-account lockout fix lands. Status labels in the UI are localized (e.g. 'Perlu Ditinjau', 'Terverifikasi'). The admin reconcile select defaults to the last event. TOTP for the browser is computed inline with hmac (pyotp is not available in the browser tool).",
+  "rca of the issue": "CSRF 403: the forked environment's public host changed, but backend/.env CORS_ORIGINS was not updated. The middleware rejects any unsafe request that has an access_token cookie and an Origin not in CORS_ORIGINS. Reproduce by logging in through the UI and creating an invoice -> 403. Mitigation: allow same-origin (Origin host == X-Forwarded-Host/Host), now applied, and update the env value. Lockout bypass: login_attempts identifier = ip:email with IP from X-Forwarded-For; the egress uses 2+ IPs, so the counter splits. Reproduced with 6 wrong passwords -> all 401."
+}

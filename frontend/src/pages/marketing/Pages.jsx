@@ -74,8 +74,8 @@ export function AboutPage() {
 }
 
 export const FeaturesPage = () => (<div data-testid="features-page"><PageHero eyebrow="Produk" title="Fitur Qrisgg" desc="Semua fitur di bawah diberi label sesuai status sebenarnya." /><Features /><FinalCta /></div>);
-export const PricingPage = () => (<div data-testid="pricing-page"><PricingSection /><FinalCta /></div>);
-export const DevelopersPage = () => (<div data-testid="developers-page"><DeveloperSection /><FinalCta /></div>);
+export const PricingPage = () => (<div data-testid="pricing-page"><h1 className="sr-only">Harga Qrisgg</h1><PricingSection /><FinalCta /></div>);
+export const DevelopersPage = () => (<div data-testid="developers-page"><h1 className="sr-only">Qrisgg untuk Developer</h1><DeveloperSection /><FinalCta /></div>);
 export const SecurityPage = () => (<div data-testid="security-page"><PageHero eyebrow="Keamanan" title="Arsitektur keamanan Qrisgg" /><SecuritySection /></div>);
 
 const ENDPOINTS = [

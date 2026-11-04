@@ -33,7 +33,9 @@ UNSAFE = {"POST", "PUT", "PATCH", "DELETE"}
 async def request_context(request: Request, call_next):
     request.state.request_id = request.headers.get("x-request-id") or f"req_{uuid.uuid4().hex[:16]}"
     origin = request.headers.get("origin")
-    if (request.method in UNSAFE and request.cookies.get("access_token") and origin
+    req_host = request.headers.get("x-forwarded-host") or request.headers.get("host") or ""
+    same_origin = bool(origin) and origin.split("://", 1)[-1].rstrip("/") == req_host.split(",")[0].strip()
+    if (request.method in UNSAFE and request.cookies.get("access_token") and origin and not same_origin
             and origin not in CORS_ORIGINS and not request.url.path.startswith("/api/v1/")):
         return JSONResponse({"detail": "Origin tidak diizinkan (CSRF)", "error": {"code": "CSRF_REJECTED"}}, status_code=403)
     response = await call_next(request)

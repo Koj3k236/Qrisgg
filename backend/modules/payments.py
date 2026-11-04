@@ -188,6 +188,11 @@ async def ingest_payment_event(*, source: str, merchant_id: str, account_key: st
 
 
 async def reconcile_verify(invoice_id: str, *, event_id: str, actor_id: str, note: str) -> dict:
+    current = await db.invoices.find_one({"id": invoice_id}, {"_id": 0, "status": 1})
+    if not current:
+        raise HTTPException(404, "Invoice tidak ditemukan")
+    if "PAID_VERIFIED" not in TRANSITIONS[current["status"]]:
+        raise HTTPException(409, f"Transisi status {current['status']} -> PAID_VERIFIED tidak diizinkan")
     event = await db.payment_events.find_one({"id": event_id, "invoice_id": invoice_id}, {"_id": 0})
     if not event:
         raise HTTPException(422, "Event pembayaran tidak terkait dengan invoice ini")

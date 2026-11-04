@@ -62,7 +62,9 @@ async def get_invoice(invoice_id: str, ctx: dict = Depends(require_perm("invoice
 
 @router.post("/{invoice_id}/cancel")
 async def cancel(invoice_id: str, body: ReasonIn, request: Request, ctx: dict = Depends(require_perm("invoices:write"))):
-    await invoice_detail(invoice_id, ctx["merchant"]["id"])
+    current = await invoice_detail(invoice_id, ctx["merchant"]["id"])
+    if current["status"] != "PENDING":
+        raise HTTPException(409, "Merchant hanya dapat membatalkan invoice yang masih menunggu pembayaran")
     inv = await transition(invoice_id, "CANCELLED", source="MERCHANT", actor_id=ctx["user"]["id"], reason=body.reason)
     await audit("invoice.cancelled", actor_id=ctx["user"]["id"], merchant_id=ctx["merchant"]["id"], target_type="invoice",
                 target_id=invoice_id, request=request)
