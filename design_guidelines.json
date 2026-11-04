@@ -1,0 +1,146 @@
+{
+  "theme": "hybrid_fullstack",
+  "typography": {
+    "font_families": {
+      "headings": "Plus Jakarta Sans, sans-serif",
+      "body": "Plus Jakarta Sans, sans-serif",
+      "mono": "JetBrains Mono, monospace"
+    },
+    "rules": {
+      "h1": "text-5xl md:text-6xl lg:text-[4rem] font-extrabold tracking-tighter leading-[1.1]",
+      "h2": "text-3xl md:text-4xl lg:text-5xl font-bold tracking-tight leading-tight",
+      "h3": "text-2xl md:text-3xl font-semibold tracking-tight",
+      "h4": "text-xl font-medium tracking-tight",
+      "body": "text-base md:text-lg leading-relaxed text-slate-600 dark:text-slate-300",
+      "labels": "text-xs font-bold uppercase tracking-[0.15em] text-slate-500",
+      "code": "font-mono text-sm leading-relaxed"
+    },
+    "instruction": "Avoid Inter for headings. Keep Plus Jakarta Sans for a clean, modern fintech feel. Rely on radical weight contrast (e.g., Extrabold headings vs Regular body). Use 'tracking-tighter' on large headings."
+  },
+  "colors": {
+    "palette": {
+      "primary": "#2563EB",
+      "primary_hover": "#1D4ED8",
+      "secondary": "#38BDF8",
+      "navy": "#0B1736",
+      "white": "#FFFFFF",
+      "soft_gray": "#F5F7FB",
+      "slate": "#64748B",
+      "success": "#10B981",
+      "warning": "#F59E0B",
+      "danger": "#EF4444"
+    },
+    "light_mode": {
+      "background": "#FFFFFF",
+      "surface": "#F5F7FB",
+      "border": "#E2E8F0",
+      "text_primary": "#0B1736",
+      "text_secondary": "#64748B"
+    },
+    "dark_mode": {
+      "background": "#0B1736",
+      "surface": "#122045",
+      "border": "#1E293B",
+      "text_primary": "#FFFFFF",
+      "text_secondary": "#94A3B8"
+    },
+    "rules": {
+      "contrast": "Always verify APCA contrast. Ensure text over primary buttons is pure white. Dark mode backgrounds should avoid pure black; use the provided Deep Navy.",
+      "accents": "Limit primary/electric blue for primary actions. Use soft gray for section backgrounds to create rhythm."
+    }
+  },
+  "visual_enhancers": {
+    "shadows": {
+      "sm": "0 1px 2px 0 rgba(11, 23, 54, 0.05)",
+      "md": "0 4px 6px -1px rgba(11, 23, 54, 0.1), 0 2px 4px -1px rgba(11, 23, 54, 0.06)",
+      "lg": "0 10px 15px -3px rgba(11, 23, 54, 0.1), 0 4px 6px -2px rgba(11, 23, 54, 0.05)",
+      "glow": "0 0 20px rgba(37, 99, 235, 0.4)"
+    },
+    "surfaces": {
+      "glass": "backdrop-blur-xl bg-white/70 dark:bg-[#0B1736]/70 border border-white/20 dark:border-white/10",
+      "cards": "bg-white dark:bg-[#122045] border border-slate-200 dark:border-slate-800 rounded-2xl",
+      "floating_ui": "bg-white/90 backdrop-blur-md dark:bg-[#122045]/90 border border-slate-100 dark:border-slate-700 shadow-xl rounded-xl"
+    },
+    "borders": "Use subtle 1px borders to define grid edges, especially in the dashboard. Avoid heavy box shadows in admin panels."
+  },
+  "layouts": {
+    "marketing": {
+      "spacing": "Generous spacing. Use py-20 to py-32 for sections. Container px-4 sm:px-6 lg:px-8.",
+      "hero": "Two-column grid (md:grid-cols-2). Left: Text & CTA. Right: Photorealistic image with absolute positioned floating UI cards (invoice, amount, QRIS DEMO, status).",
+      "features": "Bento Grid: grid-cols-1 md:grid-cols-3 lg:grid-cols-4 gap-6. Mix tall and wide cards.",
+      "timeline": "7-step 'How it works'. Vertical line with nodes on left, content on right. Use Framer Motion for scroll-triggered staggered reveals."
+    },
+    "dashboard": {
+      "sidebar": "Fixed width (e.g., 260px), border-r, compact vertical navigation.",
+      "content": "Dense, highly structured. Standard spacing (p-6). Use strict grid hierarchy for metric summary cards (grid-cols-4) and charts.",
+      "tables": "Full width, subtle borders, compact padding."
+    }
+  },
+  "motion": {
+    "rules": {
+      "hover": "Subtle translations (-translate-y-1) and shadow increases on cards.",
+      "buttons": "Scale down slightly on active (active:scale-95) for tactile feedback.",
+      "scroll": "Staggered fade-up for marketing sections. Use react-intersection-observer or framer-motion whileInView.",
+      "transitions": "Use 'transition-all duration-300 ease-in-out', except when using specific transform properties."
+    }
+  },
+  "components_to_use": {
+    "shadcn": [
+      "Button", "Card", "Input", "Label", "Tabs", "DropdownMenu", "Table", "Badge", "Dialog", "Avatar"
+    ],
+    "custom": [
+      "FloatingUI Card", "CodeSnippet", "TimelineNode", "BentoGridItem", "MetricWidget"
+    ],
+    "libraries": [
+      "lucide-react (Icons)",
+      "framer-motion (Animations)",
+      "recharts (Dashboard Charts)",
+      "sonner (Toasts)"
+    ]
+  },
+  "media": {
+    "image_urls": {
+      "hero_scanning": {
+        "url": "https://images.unsplash.com/photo-1682072155213-856c2ab9d629?crop=entropy&cs=srgb&fm=jpg&ixid=M3w4NjA1MTN8MHwxfHNlYXJjaHwyfHxwZXJzb24lMjBzY2FubmluZyUyMHFyJTIwY29kZSUyMGNhZmV8ZW58MHx8fHwxNzkzNzUxNDIyfDA&ixlib=rb-4.1.0&q=85",
+        "category": "hero",
+        "description": "Indonesian customer scanning a QRIS stand in a café, used as the right-side base image in the two-column hero."
+      },
+      "smartphone_payment": {
+        "url": "https://images.unsplash.com/photo-1556742521-9713bf272865?crop=entropy&cs=srgb&fm=jpg&ixid=M3w4NjAxODF8MHwxfHNlYXJjaHwyfHxzbWFydHBob25lJTIwcGF5bWVudCUyMGFwcHxlbnwwfHx8fDE3OTM3NTE0MjJ8MA&ixlib=rb-4.1.0&q=85",
+        "category": "marketing_features",
+        "description": "Smartphone QRIS payment showcase illustration."
+      },
+      "dashboard_preview": {
+        "url": "https://images.unsplash.com/photo-1551288049-bebda4e38f71?crop=entropy&cs=srgb&fm=jpg&ixid=M3w3NTY2Njd8MHwxfHNlYXJjaHwxfHxmaW50ZWNoJTIwZGFzaGJvYXJkJTIwYWJzdHJhY3R8ZW58MHx8fHwxNzkzNzUxNDIyfDA&ixlib=rb-4.1.0&q=85",
+        "category": "marketing_dashboard_showcase",
+        "description": "Abstract illustrative dashboard data visualization for the 'Dashboard Showcase' section."
+      }
+    },
+    "rules": "Ensure all hero images have overlay to guarantee text readability if text is on top, but right-side column images don't need heavy overlays, just subtle shadow under floating UI."
+  },
+  "accessibility": {
+    "rules": "All interactive elements MUST include data-testid. Support keyboard navigation. Use aria-labels for icon-only buttons. Contrast ratios must comply with APCA guidelines."
+  },
+  "instructions_to_main_agent": [
+    "Build the UI focusing strictly on the 'hybrid_fullstack' requirement: The marketing site is visually striking and spacious; the dashboard is dense, clean, and functional.",
+    "Do not use generic center-aligned marketing headers without intentional typography tension. Left-align text for better flow where applicable.",
+    "Marketing Hero: Create a right-column container for the image. Overlay custom floating UI components (use absolute positioning, backdrop-blur, slight rotation/transform) representing 'Invoice, Amount, QRIS DEMO, Status'.",
+    "Bento Features: 8 feature cards. Add a 'Segera Hadir' (Coming Soon) Badge to a few cards.",
+    "Timeline: Build a 7-step vertical timeline. Use simple glowing nodes.",
+    "Use Shadcn UI for complex dashboard forms/tables, but heavily customize to match the 'Deep Navy' & 'Electric Blue' premium feel.",
+    "Use 'sonner' for toast notifications on forms like login, register, reset-password.",
+    "Use React Router (or equivalent) structure with distinct layouts for Marketing, Auth, Dashboard, Admin, and Public Payment Page.",
+    "Payment page (/pay/:invoiceId): Include a mockup QR code, Payable Amount, Countdown timer, and animated Success/Pending Status."
+  ],
+  "UNIVERSAL_GUIDELINES_FOR_MAIN_AGENT": [
+    "Do not converge toward generic 'AI slop' outputs.",
+    "Create depth through layered design elements with z-index hierarchy.",
+    "Do not apply 'transition: all' universally.",
+    "Do not center align the entire App container.",
+    "Use 2-3x more spacing in marketing pages than feels comfortable.",
+    "NEVER use AI assistant Emoji characters (🤖🧠) for icons. Use lucide-react.",
+    "Every interaction needs micro-animations - hover states, transitions, entrance animations.",
+    "Include 'data-testid' on ALL interactive elements and key text.",
+    "NEVER use placeholder URLs (via.placeholder.com). Use the provided Unsplash URLs."
+  ]
+}

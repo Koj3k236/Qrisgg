@@ -1,0 +1,121 @@
+@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+body {
+    margin: 0;
+    font-family: "Plus Jakarta Sans", sans-serif;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+}
+
+code, pre, .font-mono {
+    font-family: "JetBrains Mono", monospace;
+}
+
+@layer base {
+    :root {
+        --background: 0 0% 100%;
+        --foreground: 224 66% 13%;
+        --card: 0 0% 100%;
+        --card-foreground: 224 66% 13%;
+        --popover: 0 0% 100%;
+        --popover-foreground: 224 66% 13%;
+        --primary: 221 83% 53%;
+        --primary-foreground: 0 0% 100%;
+        --secondary: 225 45% 97%;
+        --secondary-foreground: 224 66% 13%;
+        --muted: 225 45% 97%;
+        --muted-foreground: 215 16% 47%;
+        --accent: 225 45% 95%;
+        --accent-foreground: 224 66% 13%;
+        --destructive: 0 84% 60%;
+        --destructive-foreground: 0 0% 100%;
+        --border: 214 32% 91%;
+        --input: 214 32% 91%;
+        --ring: 221 83% 53%;
+        --chart-1: 221 83% 53%;
+        --chart-2: 199 92% 60%;
+        --chart-3: 160 84% 39%;
+        --chart-4: 38 92% 50%;
+        --chart-5: 224 66% 13%;
+        --radius: 0.75rem;
+    }
+    .dark {
+        --background: 224 66% 13%;
+        --foreground: 0 0% 100%;
+        --card: 223 58% 17%;
+        --card-foreground: 0 0% 100%;
+        --popover: 223 58% 17%;
+        --popover-foreground: 0 0% 100%;
+        --primary: 221 83% 53%;
+        --primary-foreground: 0 0% 100%;
+        --secondary: 223 50% 20%;
+        --secondary-foreground: 0 0% 100%;
+        --muted: 223 50% 20%;
+        --muted-foreground: 215 20% 65%;
+        --accent: 223 50% 22%;
+        --accent-foreground: 0 0% 100%;
+        --destructive: 0 63% 45%;
+        --destructive-foreground: 0 0% 100%;
+        --border: 222 40% 24%;
+        --input: 222 40% 24%;
+        --ring: 199 92% 60%;
+    }
+}
+
+@layer base {
+    * {
+        @apply border-border;
+    }
+    body {
+        @apply bg-background text-foreground;
+    }
+    ::selection {
+        background: #2563EB;
+        color: #fff;
+    }
+}
+
+@layer components {
+    .container-q {
+        @apply mx-auto w-full max-w-7xl px-4 sm:px-6 lg:px-8;
+    }
+    .eyebrow {
+        @apply text-xs font-bold uppercase tracking-[0.15em] text-[#2563EB] dark:text-[#38BDF8];
+    }
+    .card-q {
+        @apply rounded-2xl border border-slate-200 bg-white dark:border-slate-800 dark:bg-[#122045];
+    }
+    .grid-bg {
+        background-image: linear-gradient(rgba(37, 99, 235, 0.06) 1px, transparent 1px),
+            linear-gradient(90deg, rgba(37, 99, 235, 0.06) 1px, transparent 1px);
+        background-size: 48px 48px;
+    }
+    .noise::after {
+        content: "";
+        position: absolute;
+        inset: 0;
+        pointer-events: none;
+        opacity: 0.05;
+        background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='3'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+    }
+    .tbl {
+        @apply w-full text-sm;
+    }
+    .tbl th {
+        @apply border-b border-slate-200 px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-slate-500 dark:border-slate-800;
+    }
+    .tbl td {
+        @apply border-b border-slate-100 px-4 py-3 align-middle dark:border-slate-800/70;
+    }
+    .tbl tbody tr {
+        @apply transition-colors hover:bg-slate-50 dark:hover:bg-white/5;
+    }
+}
+
+[data-debug-wrapper="true"] {
+    display: contents !important;
+}
