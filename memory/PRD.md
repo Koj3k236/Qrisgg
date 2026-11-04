@@ -23,6 +23,10 @@ Sandbox-only payments; PAYMENT_DETECTED never auto → PAID_VERIFIED; verificati
 - Infra: Dockerfiles, compose (Mongo replica set → transactions), nginx, backup/restore/deploy scripts
 - Testing iteration_1: backend 29/30 → lockout bug fixed & verified; frontend flows 100% after CSRF host fix
 
+## 2026-11-04 (lanjutan)
+- Phase 8 ledger/settlement/hold/withdrawal sandbox done; MFA rotation & withdrawal retry fixes (needs e2e retest)
+- README.md rewritten: full flows, endpoints, status per phase, handoff notes (for agent switch + GitHub save). test_credentials.md is gitignored and not in git history.
+
 ## Backlog
 - P0: Phase 8 ledger double-entry, settlement tracking, 6h hold, withdrawal simulator
 - P1: Payment links; Android NotificationListener app (Kotlin); Redis/queue worker for production; replace Emergent email for self-host

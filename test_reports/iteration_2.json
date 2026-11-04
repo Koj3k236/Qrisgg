@@ -1,0 +1,39 @@
+{
+  "summary": "Iteration 2: tested Phase 8 sandbox finance (ledger, settlements, hold release, bank accounts, withdrawals, payout retry/failure, auto-withdraw, v1 balances/settlements), Phase 11.1 homepage label removal, Phase 12 email adapter / admin login alert, 2FA rotation on a SECOND TEST_ admin, plus regressions. Backend: 42/42 pytest pass (41 in full suite + 1 rotation test). Frontend: homepage slider (4 images rotating, no 'Ilustrasi · QR DEMO', hero-photo-note present), feature card labels, /pay DEMO overlay, merchant Balance/Settlements/Withdrawals pages (add bank, request withdrawal, over-limit toast), admin Ledger (LULUS), Settlements confirm via prompt+TOTP, Withdrawals approve/reject via prompt+TOTP, /2fa?rotate=1 UI rotation all work. No critical bugs found. hold_hours restored to 6; all test data deleted.",
+  "backend_issues": {
+    "critical": [],
+    "minor": [
+      {"endpoint": "POST /api/merchant/withdrawals", "issue": "Idempotency prior-lookup happens BEFORE _merchant_lock. Two concurrent requests with the SAME Idempotency-Key: second waits on lock, then insert_one hits unique index (merchant_id, idempotency_key) -> unhandled DuplicateKeyError -> 500 (code review; sequential same-key works). Re-check prior inside the lock or catch DuplicateKeyError and return existing."},
+      {"endpoint": "Admin step-up TOTP (verify/confirm/approve/reject)", "issue": "No TOTP replay protection: the same 6-digit code can be reused for multiple sensitive actions within its window (observed: one code used for settlement confirm + withdrawal approve + reject). Consider storing last-used time-step per user."},
+      {"endpoint": "ledger.confirm_settlement / release_due_holds / process_payouts", "issue": "Status transition and journal insert are two separate writes (no transactions on standalone Mongo). A crash between them leaves e.g. CONFIRMED settlement with no credit, or COMPLETED withdrawal without withdrawal_complete journal. Also PROCESSING withdrawals are never reclaimed if the worker dies mid-payout. Consider journal-first + reconciliation sweep, or a stale-PROCESSING recovery."},
+      {"endpoint": "core/email.py", "issue": "EMAIL_PROVIDER uses a default value os.environ.get('EMAIL_PROVIDER','emergent') - guideline says fail fast without defaults. Emergent email returned 429 rate_limited under test load; retries (3 attempts) worked and status logged FAILED in email_logs as expected."}
+    ]
+  },
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [],
+    "design_issues": [
+      {"screen": "/admin/withdrawals bank list", "issues": ["Verified bank status rendered as raw 'VERIFIED' text while rest of UI uses localized badges (merchant side shows 'Aktif')."]},
+      {"screen": "/dashboard/withdrawals error toast", "issues": ["Backend message 'Nominal penarikan harus Rp10000 - Rp50000000' not formatted as rupiah (Rp10.000 - Rp50.000.000)."]}
+    ]
+  },
+  "test_report_links": ["/app/backend/tests/test_finance_ledger.py", "/app/backend/tests/test_2fa_rotation.py", "/app/backend/tests/test_qrisgg_api.py", "/app/test_reports/pytest/pytest_results.xml"],
+  "action_items": [
+    "Move withdrawal idempotency lookup inside the merchant lock (or catch DuplicateKeyError) to avoid 500 on concurrent same-key requests",
+    "Optional hardening: TOTP replay protection for step-up; recovery for stuck PROCESSING withdrawals / half-applied transitions",
+    "Minor UI: localize bank status in admin, format rupiah in withdrawal limit error"
+  ],
+  "critical_code_review_comments": [
+    "ledger.request_withdrawal: prior idempotency check outside lock (see backend minor issue)",
+    "Non-atomic status+journal pairs in ledger.py; invariants() would not detect a CONFIRMED settlement lacking a journal - consider adding that check (settlements CONFIRMED/RELEASED without settlement_confirmed journal)",
+    "Password hashing uses argon2 ($argon2...) not bcrypt - acceptable/stronger, noted for playbook check",
+    "Per-account lockout now works (test_login_wrong_then_lockout passes). CORS rejects foreign origin preflight (400, no ACAO)."
+  ],
+  "updated_files": ["/app/backend/tests/test_finance_ledger.py (new)", "/app/backend/tests/test_2fa_rotation.py (new)", "/app/backend/tests/test_qrisgg_api.py (v1/balances now 200, v1/withdrawals 501)", "/app/backend/tests/conftest.py (register() records emails to /tmp/qgg_created_emails.txt for id-based cleanup)"],
+  "success_rate": {"backend": "100% (42/42)", "frontend": "100% of tested flows"},
+  "seed_data_creation": "None persisted. All TEST_ users/merchants/invoices/journals/settlements/bank accounts/withdrawals/payout_attempts/sessions/email_logs/audit logs created in this run were deleted by collected ids; seeded SUPER_ADMIN untouched (TOTP not rotated). hold_hours restored to 6.",
+  "retest_needed": false,
+  "should_main_agent_self_test": true,
+  "context_for_next_testing_agent": "Run: cd /app/backend && python -m pytest tests/ -q (~3 min; TestPayoutFailure waits ~2 min for 3 payout attempts). test_finance_ledger.fund() sets hold_hours=0 via PATCH /api/admin/settings - restore to 6 afterwards. Bank account numbers ending 0000 simulate rejection. Admin UI decisions use window.prompt (note then TOTP) - handle via page.on('dialog'). Rotation test uses a TEST_ second admin; never rotate seeded admin. conftest.register appends emails to /tmp/qgg_created_emails.txt for cleanup.",
+  "test_credentials": "From /app/memory/test_credentials.md (SUPER_ADMIN jenniferwidra@hotmail.com + TOTP secret) - worked."
+}

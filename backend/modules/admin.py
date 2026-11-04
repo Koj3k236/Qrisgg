@@ -57,9 +57,10 @@ class TicketPatch(BaseModel):
 
 
 async def _step_up(admin: dict, code: str) -> None:
+    from core.mfa import verify_totp_once
     full = await db.users.find_one({"id": admin["id"]})
-    if not full.get("mfa_enabled") or not pyotp.TOTP(decrypt(full["mfa_secret_enc"])).verify(code, valid_window=1):
-        raise HTTPException(401, "Kode 2FA untuk otorisasi tambahan salah")
+    if not full.get("mfa_enabled") or not await verify_totp_once(full["id"], full["mfa_secret_enc"], code):
+        raise HTTPException(401, "Kode 2FA untuk otorisasi tambahan salah atau sudah dipakai")
 
 
 def _page(page, page_size):

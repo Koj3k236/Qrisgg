@@ -197,9 +197,10 @@ async def mfa_verify(body: MfaVerifyIn, request: Request, response: Response):
     user = await db.users.find_one({"id": payload["sub"]}, {"_id": 0})
     if not user or not user.get("mfa_enabled"):
         raise HTTPException(401, "2FA tidak aktif")
-    if not pyotp.TOTP(decrypt(user["mfa_secret_enc"])).verify(body.code, valid_window=1):
+    from core.mfa import verify_totp_once
+    if not await verify_totp_once(user["id"], user["mfa_secret_enc"], body.code):
         await audit("auth.mfa_failed", actor_id=user["id"], request=request)
-        raise HTTPException(401, "Kode 2FA salah")
+        raise HTTPException(401, "Kode 2FA salah atau sudah dipakai")
     sid = await _create_session(request, user["id"], mfa_verified=True)
     _set_cookies(response, user["id"], sid)
     await audit("auth.login_mfa", actor_id=user["id"], request=request)

@@ -98,7 +98,7 @@ export function AdminWithdrawals() {
             <span>{b.bank_name} · {b.account_holder} · {b.account_number_masked} · <span className="font-mono text-xs">{b.merchant_id}</span></span>
             {b.status === "PENDING_VERIFICATION" ? <div className="flex gap-2">
               <button type="button" data-testid={`verify-bank-${b.id}`} onClick={() => bankAction(b.id, "verify")} className={btnPrimary}>Verifikasi</button>
-              <button type="button" data-testid={`reject-bank-${b.id}`} onClick={() => bankAction(b.id, "reject")} className={btnDanger}>Tolak</button></div> : <span className="text-xs font-semibold">{b.status}</span>}
+              <button type="button" data-testid={`reject-bank-${b.id}`} onClick={() => bankAction(b.id, "reject")} className={btnDanger}>Tolak</button></div> : <StatusBadge status={b.status === "VERIFIED" ? "ACTIVE" : "REJECTED"} />}
           </div>
         ))}
       </Panel>

@@ -259,7 +259,8 @@ class TestDevelopers:
         r = requests.post(f"{API}/v1/invoices", json={"amount": 25000}, headers=h)
         assert r.status_code == 200 and r.json()["status"] == "PENDING"
         assert requests.get(f"{API}/v1/invoices/{r.json()['id']}", headers=h).status_code == 200
-        assert requests.get(f"{API}/v1/balances", headers=h).status_code == 501
+        assert requests.get(f"{API}/v1/balances", headers=h).status_code == 200
+        assert requests.get(f"{API}/v1/withdrawals", headers=h).status_code == 501
         ro = merchant_b.post(f"{API}/merchant/api-keys", json={"name": "TEST_ro", "scopes": ["invoices:read"]}).json()
         assert requests.post(f"{API}/v1/invoices", json={"amount": 25000}, headers={"Authorization": f"Bearer {ro['secret']}"}).status_code == 403
         rot = merchant_b.post(f"{API}/merchant/api-keys/{k['id']}/rotate").json()

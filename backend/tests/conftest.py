@@ -30,6 +30,8 @@ def register(name_prefix="TEST_m"):
     r = s.post(f"{API}/auth/register", json={"name": f"{name_prefix}_{tag}", "email": email,
                                             "business_name": f"TEST_Biz_{tag}", "password": PASSWORD})
     assert r.status_code == 200, r.text
+    with open("/tmp/qgg_created_emails.txt", "a") as f:  # tracked for id-based cleanup
+        f.write(email + "\n")
     data = r.json()
     s.email = email
     s.me = data

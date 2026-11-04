@@ -113,11 +113,16 @@ async def create_settlement_for_invoice(inv: dict) -> None:
 
 async def confirm_settlement(sid: str, actor_id: str, note: str) -> dict:
     hours = (await get_settings())["hold_hours"]
+    cur = await db.settlements.find_one({"id": sid}, {"_id": 0})
+    if not cur:
+        raise HTTPException(404, "Data tidak ditemukan")
+    if "CONFIRMED" not in SETTLEMENT_TRANSITIONS[cur["status"]]:
+        raise HTTPException(409, f"Transisi {cur['status']} -> CONFIRMED tidak diizinkan")
+    await post_journal(idempotency_key=f"settlement_confirmed:{sid}", reference_type="settlement_confirmed", reference_id=sid,
+                       merchant_id=cur["merchant_id"], description=f"Settlement sandbox dikonfirmasi untuk {cur['invoice_id']}",
+                       lines=[("platform:settlement_clearing", cur["amount"], 0), (acct(cur["merchant_id"], "pending"), 0, cur["amount"])], actor_id=actor_id)
     s = await _move("settlements", sid, SETTLEMENT_TRANSITIONS, "CONFIRMED",
                     {"confirmed_at": iso(), "confirmed_by": actor_id, "hold_release_at": iso(now() + timedelta(hours=hours)), "reason": note})
-    await post_journal(idempotency_key=f"settlement_confirmed:{sid}", reference_type="settlement_confirmed", reference_id=sid,
-                       merchant_id=s["merchant_id"], description=f"Settlement sandbox dikonfirmasi untuk {s['invoice_id']}",
-                       lines=[("platform:settlement_clearing", s["amount"], 0), (acct(s["merchant_id"], "pending"), 0, s["amount"])], actor_id=actor_id)
     await emit_event(s["merchant_id"], "settlement.confirmed", {"settlement_id": sid, "invoice_id": s["invoice_id"], "amount": s["amount"]})
     return s
 
@@ -139,10 +144,10 @@ async def release_due_holds() -> int:
             reason = "Merchant tidak aktif atau status invoice berubah"
             await _move("settlements", s["id"], SETTLEMENT_TRANSITIONS, "REVIEW_REQUIRED", {"reason": reason})
             continue
-        await _move("settlements", s["id"], SETTLEMENT_TRANSITIONS, "RELEASED", {"released_at": iso(), "reason": "Hold selesai & eligibility terpenuhi"})
         await post_journal(idempotency_key=f"hold_release:{s['id']}", reference_type="hold_release", reference_id=s["id"],
                            merchant_id=s["merchant_id"], description="Pelepasan hold", actor_id=None,
                            lines=[(acct(s["merchant_id"], "pending"), s["amount"], 0), (acct(s["merchant_id"], "available"), 0, s["amount"])])
+        await _move("settlements", s["id"], SETTLEMENT_TRANSITIONS, "RELEASED", {"released_at": iso(), "reason": "Hold selesai & eligibility terpenuhi"})
         n += 1
     return n
 
@@ -163,7 +168,7 @@ async def request_withdrawal(merchant: dict, *, amount: int, bank_account_id: st
         return prior
     settings = await get_settings()
     if not settings["withdrawal_min"] <= amount <= settings["withdrawal_max"]:
-        raise HTTPException(422, f"Nominal penarikan harus Rp{settings['withdrawal_min']} - Rp{settings['withdrawal_max']}")
+        raise HTTPException(422, f"Nominal penarikan harus Rp{settings['withdrawal_min']:,} - Rp{settings['withdrawal_max']:,}".replace(",", "."))
     bank = await db.bank_accounts.find_one({"id": bank_account_id, "merchant_id": merchant["id"], "status": "VERIFIED"})
     if not bank:
         raise HTTPException(422, "Rekening tujuan belum terverifikasi")
@@ -171,6 +176,9 @@ async def request_withdrawal(merchant: dict, *, amount: int, bank_account_id: st
         raise HTTPException(403, "Merchant harus berstatus ACTIVE untuk menarik dana")
     await _merchant_lock(merchant["id"])
     try:
+        prior = await db.withdrawal_requests.find_one({"merchant_id": merchant["id"], "idempotency_key": idempotency_key}, {"_id": 0})
+        if prior:
+            return prior
         if (await balances(merchant["id"]))["available"] < amount:
             raise HTTPException(422, "Saldo tersedia (sandbox) tidak mencukupi")
         wid = new_id("wdr")
@@ -202,6 +210,10 @@ async def _reverse(w: dict, actor_id: str | None) -> None:
 async def process_payouts() -> int:
     """Payout SIMULATOR. Account numbers ending in 0000 simulate a bank rejection (retried, then FAILED)."""
     n = 0
+    stale = iso(now() - timedelta(minutes=5))
+    await db.withdrawal_requests.update_many({"status": "PROCESSING", "updated_at": {"$lt": stale}},
+                                             {"$set": {"status": "RETRY_PENDING", "next_attempt_at": None, "updated_at": iso()},
+                                              "$push": {"history": {"from": "PROCESSING", "to": "RETRY_PENDING", "at": iso(), "reason": "Pemulihan proses macet"}}})
     for _ in range(20):
         w = await db.withdrawal_requests.find_one_and_update(
             {"status": {"$in": ["APPROVED", "RETRY_PENDING"]}, "$or": [{"next_attempt_at": None}, {"next_attempt_at": {"$lte": iso()}}, {"next_attempt_at": {"$exists": False}}]},
@@ -215,11 +227,11 @@ async def process_payouts() -> int:
         await db.payout_attempts.insert_one({"id": new_id("pya"), "withdrawal_id": w["id"], "attempt": w["attempts"], "provider": "PAYOUT_SIMULATOR",
                                              "result": "SUCCESS" if ok else "BANK_REJECTED", "created_at": iso()})
         if ok:
-            await db.withdrawal_requests.update_one({"id": w["id"]}, {"$set": {"status": "COMPLETED", "completed_at": iso()},
-                                                                     "$push": {"history": {"from": "PROCESSING", "to": "COMPLETED", "at": iso()}}})
             await post_journal(idempotency_key=f"withdrawal_complete:{w['id']}", reference_type="withdrawal_complete", reference_id=w["id"],
                                merchant_id=w["merchant_id"], description="Payout simulasi selesai", actor_id=None,
                                lines=[(acct(w["merchant_id"], "payout_reserved"), w["amount"], 0), ("platform:payout_bank_sandbox", 0, w["amount"])])
+            await db.withdrawal_requests.update_one({"id": w["id"]}, {"$set": {"status": "COMPLETED", "completed_at": iso()},
+                                                                     "$push": {"history": {"from": "PROCESSING", "to": "COMPLETED", "at": iso()}}})
             await emit_event(w["merchant_id"], "withdrawal.completed", {"withdrawal_id": w["id"], "amount": w["amount"]})
         elif w["attempts"] < MAX_PAYOUT_ATTEMPTS:
             await db.withdrawal_requests.update_one({"id": w["id"]}, {"$set": {"status": "RETRY_PENDING", "next_attempt_at": iso(now() + timedelta(seconds=30 * w["attempts"]))},
